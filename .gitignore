@@ -1,2 +1,4 @@
 /.env
 /__pycache__
+/.venv
+/inventory_data_for_locally.csv
