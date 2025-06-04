@@ -8,8 +8,9 @@ import datetime
 import os
 import time
 from dotenv import load_dotenv
-from square.http.auth.o_auth_2 import BearerAuthCredentials
-from square.client import Client
+from square import Square
+from square.environment import SquareEnvironment
+
 
 from get_catalog_objects import get_catalog_objects
 from get_inventory_counts import get_inventory_counts
@@ -31,21 +32,19 @@ def main():
 
     def update(now):
         print(f"Update started at {now}.")
-        square_client = Client(
-            bearer_auth_credentials=BearerAuthCredentials(
-                access_token=os.environ["SQUARE_ACCESS_TOKEN"]
-            ),
-            environment="production",
-        )
+        square_client = Square(environment=SquareEnvironment.PRODUCTION, token=token)
+        
         item_variations_list = get_catalog_objects(
             token=token, target_location=target_location, client=square_client
         )
+
         item_variations_list = get_inventory_counts(
             token=token,
             target_location=target_location,
             item_variations_list=item_variations_list,
             client=square_client,
         )
+        
         filename = write_to_csv(item_variations_list=item_variations_list)
         if filename:
             send_file_via_sftp(
@@ -62,11 +61,15 @@ def main():
     now = datetime.datetime.now()
     update(now)
     while True:
+
         time.sleep(60 * 60)  # sleep for one hour
         now = datetime.datetime.now()
         current_hour = now.time().hour
         if 19 > current_hour > 9:
-            update(now)
+            try:
+                update(now)
+            except:
+                pass
     return
 
 
